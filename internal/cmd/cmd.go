@@ -2,11 +2,8 @@ package cmd
 
 import (
 	"github.com/kimond/godio/pkg/godio"
-	"log"
-	"os"
-	"strconv"
-
 	"github.com/spf13/cobra"
+	"os"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -18,6 +15,7 @@ var rootCmd = &cobra.Command{
 
 func Execute() {
 	rootCmd.AddCommand(noteCmd)
+	rootCmd.AddCommand(chordCmd)
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
@@ -27,21 +25,27 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
-	noteCmd.Flags().StringP("waveform", "w", string(godio.WaveformSine), "Waveform to use (Sine, Square, Sawtooth, Triangle)")
-	noteCmd.Flags().StringP("output", "o", "note.wav", "Output file name")
+	addCommonFlags(noteCmd)
+	addCommonFlags(chordCmd)
+}
+
+func addCommonFlags(cmd *cobra.Command) {
+	cmd.Flags().Float64P("duration", "d", 1, "Duration in seconds")
+	cmd.Flags().StringP("waveform", "w", string(godio.WaveformSine), "Waveform to use (Sine, Square, Sawtooth, Triangle)")
+	cmd.Flags().StringP("output", "o", "note.wav", "Output file name")
 }
 
 var noteCmd = &cobra.Command{
-	Use:        "note [frequency] [duration]",
+	Use:        "note [frequency]",
 	Short:      "Generate a note",
-	Long:       `Generate a note with a given frequency and duration in seconds.`,
-	Args:       cobra.ExactArgs(2),
-	ArgAliases: []string{"frequency", "duration"},
+	Long:       `Generate a note with a given frequency.`,
+	Args:       cobra.ExactArgs(1),
+	ArgAliases: []string{"frequency"},
 	Run: func(cmd *cobra.Command, args []string) {
 		frequency := args[0]
-		duration, err := strconv.ParseFloat(args[1], 64)
+		duration, err := cmd.Flags().GetFloat64("duration")
 		if err != nil {
-			log.Fatalf("error parsing duration: %v", err)
+			panic(err)
 		}
 		waveform, err := cmd.Flags().GetString("waveform")
 		if err != nil {
@@ -54,6 +58,49 @@ var noteCmd = &cobra.Command{
 
 		sb := godio.NewSoundBuffer()
 		sb.AppendNote(godio.NoteFrequencies[frequency], duration, godio.Waveform(waveform))
+
+		wavFile, err := os.Create(output)
+		if err != nil {
+			panic(err)
+		}
+
+		if err := sb.Write(wavFile); err != nil {
+			panic(err)
+		}
+	},
+}
+
+var chordCmd = &cobra.Command{
+	Use:        "chord [chord]",
+	Short:      "Generate a chord",
+	Long:       `Generate a chord.`,
+	Args:       cobra.ExactArgs(1),
+	ArgAliases: []string{"chord"},
+	Run: func(cmd *cobra.Command, args []string) {
+		chordString := args[0]
+
+		duration, err := cmd.Flags().GetFloat64("duration")
+		if err != nil {
+			panic(err)
+		}
+		waveform, err := cmd.Flags().GetString("waveform")
+		if err != nil {
+			panic(err)
+		}
+		output, err := cmd.Flags().GetString("output")
+		if err != nil {
+			panic(err)
+		}
+
+		chord := godio.ParseChord(chordString)
+		sb := godio.NewSoundBuffer()
+		sb.AppendChord(chord.GetFrequencies(), duration, godio.Waveform(waveform))
+		sb.ApplyADSR(godio.ADSREnvelope{
+			Attack:  10,
+			Decay:   0,
+			Sustain: 1,
+			Release: 100,
+		})
 
 		wavFile, err := os.Create(output)
 		if err != nil {
