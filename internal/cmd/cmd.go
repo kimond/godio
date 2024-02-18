@@ -16,6 +16,7 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	rootCmd.AddCommand(noteCmd)
 	rootCmd.AddCommand(chordCmd)
+	rootCmd.AddCommand(sequenceCmd)
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
@@ -27,6 +28,7 @@ func init() {
 
 	addCommonFlags(noteCmd)
 	addCommonFlags(chordCmd)
+	addCommonFlags(sequenceCmd)
 }
 
 func addCommonFlags(cmd *cobra.Command) {
@@ -95,6 +97,48 @@ var chordCmd = &cobra.Command{
 		chord := godio.ParseChord(chordString)
 		sb := godio.NewSoundBuffer()
 		sb.AppendChord(chord.GetFrequencies(), duration, godio.Waveform(waveform))
+		sb.ApplyADSR(godio.ADSREnvelope{
+			Attack:  10,
+			Decay:   0,
+			Sustain: 1,
+			Release: 100,
+		})
+
+		wavFile, err := os.Create(output)
+		if err != nil {
+			panic(err)
+		}
+
+		if err := sb.Write(wavFile); err != nil {
+			panic(err)
+		}
+	},
+}
+
+var sequenceCmd = &cobra.Command{
+	Use:   "sequence",
+	Short: "Generate a sequence of chords",
+	Long:  `Generate a sequence of chords.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		duration, err := cmd.Flags().GetFloat64("duration")
+		if err != nil {
+			panic(err)
+		}
+		waveform, err := cmd.Flags().GetString("waveform")
+		if err != nil {
+			panic(err)
+		}
+		output, err := cmd.Flags().GetString("output")
+		if err != nil {
+			panic(err)
+		}
+		chords := args
+
+		sb := godio.NewSoundBuffer()
+		for _, chordStr := range chords {
+			chord := godio.ParseChord(chordStr)
+			sb.AppendChord(chord.GetFrequencies(), duration, godio.Waveform(waveform))
+		}
 		sb.ApplyADSR(godio.ADSREnvelope{
 			Attack:  10,
 			Decay:   0,

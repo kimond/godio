@@ -118,12 +118,14 @@ var NoteFrequencies = NoteFrequenciesMap{
 	"B8":  7902.13,
 }
 
+// getNoteIndex returns the index of a note in the NoteFrequenciesMap
 func (n NoteFrequenciesMap) getNoteIndex(note string) int {
 	values := lo.Values(n)
 	sort.Float64s(values)
 	return lo.IndexOf(values, n[note])
 }
 
+// GetNoteFromInterval returns the frequency of a note given a root note and an interval in semitones
 func (n NoteFrequenciesMap) GetNoteFromInterval(root string, interval int) float64 {
 	rootIndex := n.getNoteIndex(root)
 	values := lo.Values(n)

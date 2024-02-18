@@ -30,10 +30,12 @@ type ADSREnvelope struct {
 	Release int     // Duration of the release phase in milliseconds
 }
 
+// SoundBuffer is a buffer for sound data
 type SoundBuffer struct {
 	buffers [][]int
 }
 
+// NewSoundBuffer creates a new SoundBuffer
 func NewSoundBuffer() *SoundBuffer {
 	return &SoundBuffer{}
 }
@@ -64,6 +66,7 @@ func (sb *SoundBuffer) ApplyADSR(env ADSREnvelope) {
 	}
 }
 
+// Write writes the buffer to a seekable writer
 func (sb *SoundBuffer) Write(seeker io.WriteSeeker) error {
 	intBuf := &audio.IntBuffer{Data: sb.combineBuffers(), Format: &audio.Format{SampleRate: sampleRate, NumChannels: 1}}
 	encoder := wav.NewEncoder(seeker, sampleRate, 16, 1, 1)
@@ -155,6 +158,7 @@ func (sb *SoundBuffer) AppendChord(frequencies []float64, durationSec float64, w
 	sb.buffers = append(sb.buffers, chordBuffer)
 }
 
+// combineBuffers combines the buffers in a SoundBuffer into a single buffer
 func (sb *SoundBuffer) combineBuffers() []int {
 	var combinedBuffer []int
 	for _, buffer := range sb.buffers {

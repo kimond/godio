@@ -5,6 +5,7 @@ import (
 )
 
 type Chord struct {
+	OctaveMod  string
 	Root       string
 	Type       string
 	Extensions []string
@@ -27,14 +28,17 @@ var ExtensionInterval = map[string]int{
 	"b11": 16,
 	"11":  17,
 	"#11": 18,
+	"b13": 20,
 	"13":  21,
 }
 
 func (c Chord) GetFrequencies() []float64 {
 	formula := ChordFormulas[c.Type]
 	var frequencies []float64
-	// Always use the 4 octave for now
-	rootNoteName := c.Root + "4"
+	rootNoteName := c.Root + "5"
+	if c.OctaveMod == "l" {
+		rootNoteName = c.Root + "4"
+	}
 	frequencies = append(frequencies, NoteFrequencies[rootNoteName])
 	for _, ext := range c.Extensions {
 		formula = append(formula, ExtensionInterval[ext])
@@ -46,17 +50,18 @@ func (c Chord) GetFrequencies() []float64 {
 }
 
 func ParseChord(chordStr string) Chord {
-	regex := regexp.MustCompile(`([A-G][#b]?)((?:m|maj|dim|aug|sus2|sus4)?)(\d*)`)
+	regex := regexp.MustCompile(`(l?)([A-G][#b]?)((?:m|maj|dim|aug|sus2|sus4)?)(\d*)`)
 
 	matches := regex.FindStringSubmatch(chordStr)
 
 	// Extract components
-	root := matches[1]
-	chordType := matches[2]
+	octaveModifier := matches[1]
+	root := matches[2]
+	chordType := matches[3]
 	if chordType == "" {
 		chordType = "maj"
 	}
-	extensions := matches[3]
+	extensions := matches[4]
 
 	// Convert extensions to slice of strings
 	var exts []string
@@ -65,6 +70,7 @@ func ParseChord(chordStr string) Chord {
 	}
 
 	return Chord{
+		OctaveMod:  octaveModifier,
 		Root:       root,
 		Type:       chordType,
 		Extensions: exts,
