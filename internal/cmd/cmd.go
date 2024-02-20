@@ -33,7 +33,7 @@ func init() {
 
 func addCommonFlags(cmd *cobra.Command) {
 	cmd.Flags().Float64P("duration", "d", 1, "Duration in seconds")
-	cmd.Flags().StringP("waveform", "w", string(godio.WaveformSine), "Waveform to use (Sine, Square, Sawtooth, Triangle)")
+	cmd.Flags().StringP("waveform", "w", string(godio.WaveformTriangle), "Waveform to use (Sine, Square, Sawtooth, Triangle)")
 	cmd.Flags().StringP("output", "o", "note.wav", "Output file name")
 }
 
@@ -140,10 +140,10 @@ var sequenceCmd = &cobra.Command{
 			sb.AppendChord(chord.GetFrequencies(), duration, godio.Waveform(waveform))
 		}
 		sb.ApplyADSR(godio.ADSREnvelope{
-			Attack:  10,
-			Decay:   0,
-			Sustain: 1,
-			Release: 100,
+			Attack:  1,
+			Decay:   int(duration * 1000),
+			Sustain: 0,
+			Release: 0,
 		})
 
 		wavFile, err := os.Create(output)
