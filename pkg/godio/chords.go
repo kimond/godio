@@ -1,6 +1,7 @@
 package godio
 
 import (
+	"github.com/samber/lo"
 	"regexp"
 )
 
@@ -14,12 +15,12 @@ type Chord struct {
 }
 
 var ChordFormulas = map[string][]int{
-	"maj":  {0, 4, 7},
-	"m":    {0, 3, 7},
-	"dim":  {0, 3, 6},
-	"aug":  {0, 4, 8},
-	"sus2": {0, 2, 7},
-	"sus4": {0, 5, 7},
+	"maj":  {4, 7},
+	"m":    {3, 7},
+	"dim":  {3, 6},
+	"aug":  {4, 8},
+	"sus2": {2, 7},
+	"sus4": {5, 7},
 }
 
 var ExtensionIntervals = map[string][]int{
@@ -48,19 +49,22 @@ var AdditionalNotes = map[string]int{
 func (c Chord) GetFrequencies() []float64 {
 	formula := ChordFormulas[c.Type]
 	var frequencies []float64
-	rootNoteName := c.Root + "5"
-	if c.OctaveMod == "l" {
-		rootNoteName = c.Root + "4"
-	}
-	frequencies = append(frequencies, NoteFrequencies[rootNoteName])
+	bassNoteName := c.Root + "2"
+	rootNoteName := c.Root + "4"
+	frequencies = append(frequencies, NoteFrequencies[bassNoteName])
 	if c.Extension != "" {
 		formula = append(formula, ExtensionIntervals[c.Extension]...)
 	}
 	if c.Addition != "" {
 		formula = append(formula, AdditionalNotes[c.Addition])
 	}
+
+	hasFifthAlteration := false
 	for _, alteration := range c.Alterations {
 		mod, degree := alteration[0], alteration[1:]
+		if degree == "5" {
+			hasFifthAlteration = true
+		}
 		var newValue int
 		if mod == '#' {
 			newValue = AlterationMap[degree] + 1
@@ -75,6 +79,13 @@ func (c Chord) GetFrequencies() []float64 {
 		}
 	}
 
+	if len(formula)+1 >= 6 && !hasFifthAlteration {
+		// Remove the fifth if chord has more than 6 notes and no alteration of the fifth
+		formula = lo.Filter(formula, func(i int, _ int) bool {
+			return i != 7
+		})
+	}
+
 	for _, interval := range formula {
 		frequencies = append(frequencies, NoteFrequencies.GetNoteFromInterval(rootNoteName, interval))
 	}
@@ -82,11 +93,10 @@ func (c Chord) GetFrequencies() []float64 {
 }
 
 func ParseChord(chordStr string) Chord {
-	regex := regexp.MustCompile(`(l?)([A-G][#b]?)((?:m|maj|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add\d{1,2})?)`)
+	regex := regexp.MustCompile(`(l?)([A-G][#b]?)((?:maj|m|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add\d{1,2})?)`)
 
 	matches := regex.FindStringSubmatch(chordStr)
 
-	// Extract components
 	octaveModifier := matches[1]
 	root := matches[2]
 	chordType := matches[3]
