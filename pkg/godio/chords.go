@@ -3,10 +3,10 @@ package godio
 import (
 	"github.com/samber/lo"
 	"regexp"
+	"strings"
 )
 
 type Chord struct {
-	OctaveMod   string
 	Root        string
 	Type        string
 	Extension   string
@@ -15,12 +15,12 @@ type Chord struct {
 }
 
 var ChordFormulas = map[string][]int{
-	"maj":  {4, 7},
-	"m":    {3, 7},
-	"dim":  {3, 6},
-	"aug":  {4, 8},
-	"sus2": {2, 7},
-	"sus4": {5, 7},
+	"maj":  {0, 4, 7},
+	"m":    {0, 3, 7},
+	"dim":  {0, 3, 6},
+	"aug":  {0, 4, 8},
+	"sus2": {0, 2, 7},
+	"sus4": {0, 5, 7},
 }
 
 var ExtensionIntervals = map[string][]int{
@@ -50,7 +50,8 @@ func (c Chord) GetFrequencies() []float64 {
 	formula := ChordFormulas[c.Type]
 	var frequencies []float64
 	bassNoteName := c.Root + "2"
-	rootNoteName := c.Root + "4"
+	rootNoteName := c.Root + "3"
+
 	frequencies = append(frequencies, NoteFrequencies[bassNoteName])
 	if c.Extension != "" {
 		formula = append(formula, ExtensionIntervals[c.Extension]...)
@@ -86,31 +87,46 @@ func (c Chord) GetFrequencies() []float64 {
 		})
 	}
 
+	if len(formula) >= 5 {
+		// Remove the upper root note if chord has more than 5 notes
+		formula = lo.Filter(formula, func(i int, _ int) bool {
+			return i != 0
+		})
+	}
+
 	for _, interval := range formula {
-		frequencies = append(frequencies, NoteFrequencies.GetNoteFromInterval(rootNoteName, interval))
+		intervalFrequency := NoteFrequencies.GetNoteFromInterval(rootNoteName, interval)
+		if intervalFrequency > NoteFrequencies["F#4"] {
+			intervalFrequency = NoteFrequencies.GetNoteFromInterval(rootNoteName, interval-12)
+		}
+		if intervalFrequency < NoteFrequencies["G3"] {
+			intervalFrequency = NoteFrequencies.GetNoteFromInterval(rootNoteName, interval+12)
+		}
+		frequencies = append(frequencies, intervalFrequency)
 	}
 	return frequencies
 }
 
 func ParseChord(chordStr string) Chord {
-	regex := regexp.MustCompile(`(l?)([A-G][#b]?)((?:maj|m|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add\d{1,2})?)`)
+	regex := regexp.MustCompile(`([A-G][#b]?)((?:maj|m|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add\d{1,2})?)`)
 
 	matches := regex.FindStringSubmatch(chordStr)
 
-	octaveModifier := matches[1]
-	root := matches[2]
-	chordType := matches[3]
+	root := matches[1]
+	if strings.Contains(root, "b") {
+		root = flatToSharp[root]
+	}
+	chordType := matches[2]
 	if chordType == "" {
 		chordType = "maj"
 	}
-	extension := matches[4]
-	alterationMatch := matches[5]
-	addition := matches[6]
+	extension := matches[3]
+	alterationMatch := matches[4]
+	addition := matches[5]
 
 	alterations := regexp.MustCompile(`[#b]\d{1,2}`).FindAllString(alterationMatch, -1)
 
 	return Chord{
-		OctaveMod:   octaveModifier,
 		Root:        root,
 		Type:        chordType,
 		Extension:   extension,

@@ -8,14 +8,17 @@ import (
 func TestChord(t *testing.T) {
 	parameters := []struct {
 		input    string
-		expected []float64
+		expected []string
 	}{
-		{"Cmaj", []float64{NoteFrequencies["C2"], NoteFrequencies["E4"], NoteFrequencies["G4"]}},
-		{"Cm7", []float64{NoteFrequencies["C2"], NoteFrequencies["D#4"], NoteFrequencies["G4"], NoteFrequencies["A#4"]}},
-		{"Cm7b5", []float64{NoteFrequencies["C2"], NoteFrequencies["D#4"], NoteFrequencies["F#4"], NoteFrequencies["A#4"]}},
-		{"Cmadd11", []float64{NoteFrequencies["C2"], NoteFrequencies["D#4"], NoteFrequencies["G4"], NoteFrequencies["F5"]}},
-		{"C11", []float64{NoteFrequencies["C2"], NoteFrequencies["E4"], NoteFrequencies["A#4"], NoteFrequencies["D5"], NoteFrequencies["F5"]}},
-		{"C11b5", []float64{NoteFrequencies["C2"], NoteFrequencies["E4"], NoteFrequencies["F#4"], NoteFrequencies["A#4"], NoteFrequencies["D5"], NoteFrequencies["F5"]}},
+		{"Cmaj", []string{"C2", "C4", "E4", "G3"}},
+		{"Cm7", []string{"C2", "C4", "D#4", "G3", "A#3"}},
+		{"Cm7b5", []string{"C2", "C4", "D#4", "F#4", "A#3"}},
+		{"Cmadd11", []string{"C2", "C4", "D#4", "G3", "F4"}},
+		{"C11", []string{"C2", "E4", "A#3", "D4", "F4"}},
+		{"C11b5", []string{"C2", "E4", "F#4", "A#3", "D4", "F4"}},
+		{"Dbm7", []string{"C#2", "C#4", "E4", "G#3", "B3"}},
+		{"G9", []string{"G2", "G3", "B3", "F4", "A3"}},
+		{"F#13", []string{"F#2", "A#3", "E4", "G#3", "B3", "D#4"}},
 	}
 
 	for i := range parameters {
@@ -23,8 +26,9 @@ func TestChord(t *testing.T) {
 			chord := ParseChord(parameters[i].input)
 			frequencies := chord.GetFrequencies()
 			for j, frequency := range frequencies {
-				if frequency != parameters[i].expected[j] {
-					t.Errorf("Expected %f, but got %f", parameters[i].expected[j], frequency)
+				expectedFrequency := NoteFrequencies[parameters[i].expected[j]]
+				if frequency != expectedFrequency {
+					t.Errorf("Expected %f, but got %f in position %d", expectedFrequency, frequency, j+1)
 				}
 			}
 		})

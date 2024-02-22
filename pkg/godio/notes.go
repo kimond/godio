@@ -118,6 +118,16 @@ var NoteFrequencies = NoteFrequenciesMap{
 	"B8":  7902.13,
 }
 
+var flatToSharp = map[string]string{
+	"Cb": "B",
+	"Db": "C#",
+	"Eb": "D#",
+	"Fb": "E",
+	"Gb": "F#",
+	"Ab": "G#",
+	"Bb": "A#",
+}
+
 // getNoteIndex returns the index of a note in the NoteFrequenciesMap
 func (n NoteFrequenciesMap) getNoteIndex(note string) int {
 	values := lo.Values(n)
