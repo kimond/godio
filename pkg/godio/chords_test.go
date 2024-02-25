@@ -14,11 +14,11 @@ func TestChord(t *testing.T) {
 		{"Cm7", []string{"C2", "C4", "D#4", "G3", "A#3"}},
 		{"Cm7b5", []string{"C2", "C4", "D#4", "F#4", "A#3"}},
 		{"Cmadd11", []string{"C2", "C4", "D#4", "G3", "F4"}},
-		{"C11", []string{"C2", "E4", "A#3", "D4", "F4"}},
-		{"C11b5", []string{"C2", "E4", "F#4", "A#3", "D4", "F4"}},
+		{"C11", []string{"C2", "G3", "A#3", "D4", "F4"}},
+		{"C11b5", []string{"C2", "F#4", "A#3", "D4", "F4"}},
 		{"Dbm7", []string{"C#2", "C#4", "E4", "G#3", "B3"}},
-		{"G9", []string{"G2", "G3", "B3", "F4", "A3"}},
-		{"F#13", []string{"F#2", "A#3", "E4", "G#3", "B3", "D#4"}},
+		{"G9", []string{"G2", "B3", "D4", "F4", "A3"}},
+		{"F#13", []string{"F#2", "A#3", "E4", "G#3", "D#4"}},
 	}
 
 	for i := range parameters {

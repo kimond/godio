@@ -28,7 +28,7 @@ var ExtensionIntervals = map[string][]int{
 	"7":  {10},
 	"9":  {10, 14},
 	"11": {10, 14, 17},
-	"13": {10, 14, 17, 21},
+	"13": {10, 14, 21},
 }
 
 var AlterationMap = map[string]int{
@@ -55,6 +55,12 @@ func (c Chord) GetFrequencies() []float64 {
 	frequencies = append(frequencies, NoteFrequencies[bassNoteName])
 	if c.Extension != "" {
 		formula = append(formula, ExtensionIntervals[c.Extension]...)
+		if c.Extension == "11" {
+			// remove the 3rd if it's an 11
+			formula = lo.Filter(formula, func(i int, _ int) bool {
+				return i != 3 && i != 4
+			})
+		}
 	}
 	if c.Addition != "" {
 		formula = append(formula, AdditionalNotes[c.Addition])
@@ -80,17 +86,17 @@ func (c Chord) GetFrequencies() []float64 {
 		}
 	}
 
+	if len(formula)+1 >= 6 {
+		// Remove the upper root note if chord has more than 5 notes
+		formula = lo.Filter(formula, func(i int, _ int) bool {
+			return i != 0
+		})
+	}
+
 	if len(formula)+1 >= 6 && !hasFifthAlteration {
 		// Remove the fifth if chord has more than 6 notes and no alteration of the fifth
 		formula = lo.Filter(formula, func(i int, _ int) bool {
 			return i != 7
-		})
-	}
-
-	if len(formula) >= 5 {
-		// Remove the upper root note if chord has more than 5 notes
-		formula = lo.Filter(formula, func(i int, _ int) bool {
-			return i != 0
 		})
 	}
 
