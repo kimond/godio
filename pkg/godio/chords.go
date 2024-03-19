@@ -13,6 +13,7 @@ type Chord struct {
 	Extension   string
 	Alterations []string
 	Addition    string
+	BassNote    string
 }
 
 var ChordFormulas = map[string][]int{
@@ -56,7 +57,12 @@ var AdditionalNotes = map[string]int{
 func (c Chord) GetFrequencies() []float64 {
 	formula := ChordFormulas[c.Type]
 	var frequencies []float64
-	bassNoteName := c.Root + "2"
+	var bassNoteName string
+	if c.BassNote != "" {
+		bassNoteName = c.BassNote + "2"
+	} else {
+		bassNoteName = c.Root + "2"
+	}
 	rootNoteName := c.Root + "3"
 
 	frequencies = append(frequencies, NoteFrequencies[bassNoteName])
@@ -121,7 +127,7 @@ func (c Chord) GetFrequencies() []float64 {
 }
 
 func ParseChord(chordStr string) Chord {
-	regex := regexp.MustCompile(`([A-G][#b]?)((?:maj|m|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add[#b]?\d{1,2})?)`)
+	regex := regexp.MustCompile(`([A-G][#b]?)((?:maj|m|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add[#b]?\d{1,2})?)((/[A-G][#b]?)?)`)
 
 	matches := regex.FindStringSubmatch(chordStr)
 
@@ -136,6 +142,13 @@ func ParseChord(chordStr string) Chord {
 	extension := matches[3]
 	alterationMatch := matches[4]
 	addition := matches[5]
+	bassNote := ""
+	if matches[6] != "" {
+		bassNote = matches[6][1:]
+		if strings.Contains(bassNote, "b") {
+			bassNote = flatToSharp[bassNote]
+		}
+	}
 
 	alterations := regexp.MustCompile(`[#b]\d{1,2}`).FindAllString(alterationMatch, -1)
 
@@ -145,5 +158,6 @@ func ParseChord(chordStr string) Chord {
 		Extension:   extension,
 		Alterations: alterations,
 		Addition:    addition,
+		BassNote:    bassNote,
 	}
 }
