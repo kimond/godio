@@ -14,6 +14,7 @@ func TestChord(t *testing.T) {
 		{"Cm7", []string{"C2", "C4", "D#4", "G3", "A#3"}},
 		{"Cm7b5", []string{"C2", "C4", "D#4", "F#4", "A#3"}},
 		{"Cmadd11", []string{"C2", "C4", "D#4", "G3", "F4"}},
+		{"Cmadd#11", []string{"C2", "C4", "D#4", "G3", "F#4"}},
 		{"C11", []string{"C2", "G3", "A#3", "D4", "F4"}},
 		{"C11b5", []string{"C2", "F#4", "A#3", "D4", "F4"}},
 		{"Dbm7", []string{"C#2", "C#4", "E4", "G#3", "B3"}},

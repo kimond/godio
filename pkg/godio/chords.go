@@ -1,9 +1,10 @@
 package godio
 
 import (
-	"github.com/samber/lo"
 	"regexp"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 type Chord struct {
@@ -41,9 +42,15 @@ var AlterationMap = map[string]int{
 }
 
 var AdditionalNotes = map[string]int{
-	"add9":  14,
-	"add11": 17,
-	"add13": 21,
+	"addb9":  13,
+	"add9":   14,
+	"add#9":  15,
+	"addb11": 16,
+	"add11":  17,
+	"add#11": 18,
+	"addb13": 20,
+	"add13":  21,
+	"add#13": 22,
 }
 
 func (c Chord) GetFrequencies() []float64 {
@@ -114,7 +121,7 @@ func (c Chord) GetFrequencies() []float64 {
 }
 
 func ParseChord(chordStr string) Chord {
-	regex := regexp.MustCompile(`([A-G][#b]?)((?:maj|m|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add\d{1,2})?)`)
+	regex := regexp.MustCompile(`([A-G][#b]?)((?:maj|m|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add[#b]?\d{1,2})?)`)
 
 	matches := regex.FindStringSubmatch(chordStr)
 
