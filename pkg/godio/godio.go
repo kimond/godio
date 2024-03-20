@@ -10,7 +10,7 @@ import (
 
 const (
 	sampleRate = 44100
-	volume     = 0.2
+	volume     = 0.8
 )
 
 type Waveform string
