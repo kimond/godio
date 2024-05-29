@@ -18,6 +18,7 @@ type Chord struct {
 
 var ChordFormulas = map[string][]int{
 	"maj":  {0, 4, 7},
+	"maj7": {0, 4, 7, 11},
 	"m":    {0, 3, 7},
 	"dim":  {0, 3, 6},
 	"aug":  {0, 4, 8},
@@ -26,11 +27,12 @@ var ChordFormulas = map[string][]int{
 }
 
 var ExtensionIntervals = map[string][]int{
-	"6":  {9},
-	"7":  {10},
-	"9":  {10, 14},
-	"11": {10, 14, 17},
-	"13": {10, 14, 21},
+	"6":    {9},
+	"7":    {10},
+	"maj7": {11},
+	"9":    {10, 14},
+	"11":   {10, 14, 17},
+	"13":   {10, 14, 21},
 }
 
 var AlterationMap = map[string]int{
@@ -127,7 +129,7 @@ func (c Chord) GetFrequencies() []float64 {
 }
 
 func ParseChord(chordStr string) Chord {
-	regex := regexp.MustCompile(`([A-G][#b]?)((?:maj|m|dim|aug|sus2|sus4)?)((?:6|7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add[#b]?\d{1,2})?)((/[A-G][#b]?)?)`)
+	regex := regexp.MustCompile(`([A-G][#b]?)((?:maj7?|m|dim|aug|sus2|sus4)?)((?:6|7|maj7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add[#b]?\d{1,2})?)((/[A-G][#b]?)?)`)
 
 	matches := regex.FindStringSubmatch(chordStr)
 
