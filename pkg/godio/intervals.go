@@ -7,7 +7,7 @@ var IntervalSemitones = map[string]int{
 	"m3": 3,
 	"M3": 4,
 	"P4": 5,
-	"TT": 6,
+	"A4": 6,
 	"P5": 7,
 	"m6": 8,
 	"M6": 9,
