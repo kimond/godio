@@ -1,8 +1,9 @@
 package godio
 
 import (
-	"github.com/samber/lo"
 	"sort"
+
+	"github.com/samber/lo"
 )
 
 type NoteFrequenciesMap map[string]float64
@@ -136,9 +137,9 @@ func (n NoteFrequenciesMap) getNoteIndex(note string) int {
 }
 
 // GetNoteFromInterval returns the frequency of a note given a root note and an interval in semitones
-func (n NoteFrequenciesMap) GetNoteFromInterval(root string, interval int) float64 {
+func (n NoteFrequenciesMap) GetNoteFromInterval(root string, interval Interval) float64 {
 	rootIndex := n.getNoteIndex(root)
 	values := lo.Values(n)
 	sort.Float64s(values)
-	return values[rootIndex+interval]
+	return values[rootIndex+int(interval)]
 }

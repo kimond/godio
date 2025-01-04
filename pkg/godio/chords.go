@@ -8,56 +8,89 @@ import (
 )
 
 type Chord struct {
-	Root        string
-	Type        string
-	Extension   string
-	Alterations []string
-	Addition    string
-	BassNote    string
+	Root         string
+	Type         string
+	Extension    string
+	Alterations  []string
+	Addition     string
+	BassNote     string
+	VoicingRules []VoicingRule
+	Tones        []Interval
 }
 
-var ChordFormulas = map[string][]int{
-	"maj":  {0, 4, 7},
-	"maj7": {0, 4, 7, 11},
-	"m":    {0, 3, 7},
-	"dim":  {0, 3, 6},
-	"aug":  {0, 4, 8},
-	"sus2": {0, 2, 7},
-	"sus4": {0, 5, 7},
+var ChordFormulas = map[string][]Interval{
+	"maj":  {Root, MajorThird, PerfectFifth},
+	"maj7": {Root, MajorThird, PerfectFifth, MajorSeventh},
+	"m":    {Root, MinorThird, PerfectFifth},
+	"dim":  {Root, MinorThird, DiminishedFifth},
+	"aug":  {Root, MajorThird, AugmentedFifth},
+	"sus2": {Root, MajorSecond, PerfectFifth},
+	"sus4": {Root, PerfectFourth, PerfectFifth},
 }
 
-var ExtensionIntervals = map[string][]int{
-	"6":    {9},
-	"7":    {10},
-	"maj7": {11},
-	"9":    {10, 14},
-	"11":   {10, 14, 17},
-	"13":   {10, 14, 21},
+var ExtensionIntervals = map[string][]Interval{
+	"6":    {MajorSixth},
+	"7":    {MinorSeventh},
+	"maj7": {MajorSeventh},
+	"9":    {MinorSeventh, MajorNinth},
+	"11":   {MinorSeventh, MajorNinth, PerfectEleventh},
+	"13":   {MinorSeventh, MajorNinth, MajorThirteenth},
 }
 
-var AlterationMap = map[string]int{
-	"5":  7,
-	"6":  9,
-	"7":  10,
-	"9":  14,
-	"11": 17,
-	"13": 21,
+var AlterationMap = map[string]Interval{
+	"5":  PerfectFifth,
+	"6":  MajorSixth,
+	"7":  MinorSeventh,
+	"9":  MajorNinth,
+	"11": PerfectEleventh,
+	"13": MajorThirteenth,
 }
 
-var AdditionalNotes = map[string]int{
-	"addb9":  13,
-	"add9":   14,
-	"add#9":  15,
-	"addb11": 16,
-	"add11":  17,
-	"add#11": 18,
-	"addb13": 20,
-	"add13":  21,
-	"add#13": 22,
+var AdditionalNotes = map[string]Interval{
+	"addb9":  MinorNinth,
+	"add9":   MajorNinth,
+	"add#9":  AugmentedNinth,
+	"addb11": MinorEleventh,
+	"add11":  PerfectEleventh,
+	"add#11": AugmentedEleven,
+	"addb13": MinorThirteenth,
+	"add13":  MajorThirteenth,
+	"add#13": AugmentedThirteenth,
+}
+
+func (c *Chord) addTone(tone Interval) {
+	c.Tones = append(c.Tones, tone)
+}
+
+func (c *Chord) addTones(tones []Interval) {
+	c.Tones = append(c.Tones, tones...)
+}
+
+func (c *Chord) replaceTone(tone Interval, newTone Interval) {
+	for i, t := range c.Tones {
+		if t == tone {
+			c.Tones[i] = newTone
+		}
+	}
+}
+
+func (c *Chord) removeTone(tone Interval) {
+	c.Tones = lo.Filter(c.Tones, func(i Interval, _ int) bool {
+		return i != tone
+	})
+}
+
+func (c Chord) hasInterval(interval Interval) bool {
+	formula := ChordFormulas[c.Type]
+	for _, i := range formula {
+		if i == interval {
+			return true
+		}
+	}
+	return false
 }
 
 func (c Chord) GetFrequencies() []float64 {
-	formula := ChordFormulas[c.Type]
 	var frequencies []float64
 	var bassNoteName string
 	if c.BassNote != "" {
@@ -68,54 +101,8 @@ func (c Chord) GetFrequencies() []float64 {
 	rootNoteName := c.Root + "3"
 
 	frequencies = append(frequencies, NoteFrequencies[bassNoteName])
-	if c.Extension != "" {
-		formula = append(formula, ExtensionIntervals[c.Extension]...)
-		if c.Extension == "11" {
-			// remove the 3rd if it's an 11
-			formula = lo.Filter(formula, func(i int, _ int) bool {
-				return i != 3 && i != 4
-			})
-		}
-	}
-	if c.Addition != "" {
-		formula = append(formula, AdditionalNotes[c.Addition])
-	}
 
-	hasFifthAlteration := false
-	for _, alteration := range c.Alterations {
-		mod, degree := alteration[0], alteration[1:]
-		if degree == "5" {
-			hasFifthAlteration = true
-		}
-		var newValue int
-		if mod == '#' {
-			newValue = AlterationMap[degree] + 1
-		} else if mod == 'b' {
-			newValue = AlterationMap[degree] - 1
-		}
-
-		for i, interval := range formula {
-			if interval == AlterationMap[degree] {
-				formula[i] = newValue
-			}
-		}
-	}
-
-	if len(formula)+1 >= 6 {
-		// Remove the upper root note if chord has more than 5 notes
-		formula = lo.Filter(formula, func(i int, _ int) bool {
-			return i != 0
-		})
-	}
-
-	if len(formula)+1 >= 6 && !hasFifthAlteration {
-		// Remove the fifth if chord has more than 6 notes and no alteration of the fifth
-		formula = lo.Filter(formula, func(i int, _ int) bool {
-			return i != 7
-		})
-	}
-
-	for _, interval := range formula {
+	for _, interval := range c.Tones {
 		intervalFrequency := NoteFrequencies.GetNoteFromInterval(rootNoteName, interval)
 		if intervalFrequency > NoteFrequencies["F#4"] {
 			intervalFrequency = NoteFrequencies.GetNoteFromInterval(rootNoteName, interval-12)
@@ -125,25 +112,69 @@ func (c Chord) GetFrequencies() []float64 {
 		}
 		frequencies = append(frequencies, intervalFrequency)
 	}
+
 	return frequencies
 }
 
-func ParseChord(chordStr string) Chord {
+func (c *Chord) applyVoicingRules() {
+	for _, rule := range c.VoicingRules {
+		if rule.Condition(c) {
+			rule.Action(c)
+		}
+	}
+}
+
+func ParseChord(chordStr string) *Chord {
 	regex := regexp.MustCompile(`([A-G][#b]?)((?:maj7?|m|dim|aug|sus2|sus4)?)((?:6|7|maj7|9|11|13)?)((?:[#b]\d{1,2})*)((?:add[#b]?\d{1,2})?)((/[A-G][#b]?)?)`)
 
 	matches := regex.FindStringSubmatch(chordStr)
+
+	chord := &Chord{
+		Tones:        []Interval{},
+		VoicingRules: defaultVoicingRules,
+	}
 
 	root := matches[1]
 	if strings.Contains(root, "b") {
 		root = flatToSharp[root]
 	}
+	chord.Root = root
+
 	chordType := matches[2]
 	if chordType == "" {
 		chordType = "maj"
 	}
+	chord.Type = chordType
+	chord.addTones(ChordFormulas[chordType])
+
 	extension := matches[3]
-	alterationMatch := matches[4]
+	if extension != "" {
+		chord.Extension = extension
+		chord.addTones(ExtensionIntervals[extension])
+	}
+
 	addition := matches[5]
+	chord.Addition = addition
+	if addition != "" {
+		chord.addTone(AdditionalNotes[addition])
+	}
+
+	alterationMatch := matches[4]
+	alterations := regexp.MustCompile(`[#b]\d{1,2}`).FindAllString(alterationMatch, -1)
+	chord.Alterations = alterations
+	for _, alteration := range alterations {
+		mod, degree := alteration[0], alteration[1:]
+		var newInterval Interval
+		switch mod {
+		case '#':
+			newInterval = AlterationMap[degree] + 1
+		case 'b':
+			newInterval = AlterationMap[degree] - 1
+		}
+
+		chord.replaceTone(AlterationMap[degree], newInterval)
+	}
+
 	bassNote := ""
 	if matches[6] != "" {
 		bassNote = matches[6][1:]
@@ -151,15 +182,9 @@ func ParseChord(chordStr string) Chord {
 			bassNote = flatToSharp[bassNote]
 		}
 	}
+	chord.BassNote = bassNote
 
-	alterations := regexp.MustCompile(`[#b]\d{1,2}`).FindAllString(alterationMatch, -1)
+	chord.applyVoicingRules()
 
-	return Chord{
-		Root:        root,
-		Type:        chordType,
-		Extension:   extension,
-		Alterations: alterations,
-		Addition:    addition,
-		BassNote:    bassNote,
-	}
+	return chord
 }
