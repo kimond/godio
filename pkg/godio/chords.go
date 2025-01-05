@@ -1,11 +1,12 @@
 package godio
 
 import (
-	"regexp"
-	"strings"
-	"slices"
-	"unicode"
 	"math"
+	"regexp"
+	"slices"
+	"strings"
+	"unicode"
+
 	"github.com/samber/lo"
 )
 
@@ -20,12 +21,12 @@ type Chord struct {
 	Tones        []Interval
 }
 
-type ChalkChord struct {  //All of my python code copied here will have its types and functions preceeded with "Chalk"
-	Root         string
-	BassNote     string
-	Quality      string
-	Extensions   []string
-	Tones []int
+type ChalkChord struct { //All of my python code copied here will have its types and functions preceeded with "Chalk"
+	Root       int
+	BassNote   int
+	Quality    string
+	Extensions []string
+	Tones      []int
 }
 
 var ChalkChordFormulas = map[string][]int{ //This kind of chord formula uses numbers instead of an intermediary "interval" type.
@@ -35,8 +36,9 @@ var ChalkChordFormulas = map[string][]int{ //This kind of chord formula uses num
 	"dim":     {3, 6},
 	"dim7":    {3, 6, 9},
 	"m":       {3, 7},
-	"m7":      {4, 10, 7},
+	"m7":      {3, 10, 7},
 	"maj7":    {4, 11, 7},
+	"7":       {4, 10, 7},
 	"9":       {4, 10, 2, 7},
 	"m9":      {3, 10, 2, 7},
 	"maj9":    {4, 11, 2, 7},
@@ -51,23 +53,21 @@ var ChalkChordFormulas = map[string][]int{ //This kind of chord formula uses num
 }
 
 var ChalkExtensionFormulas = map[string]int{
-	"#1": 1,
-	"#15": 1,
-	"b9": 1,
-	"9": 2,
-	"#9": 3,
-	"ll": 5,
-	"#11": 6,
-	"b5" : -6,
-	"#5" : -4,
-	"b13" : 8,
-	"13" : 9,
-	"sus" : 5-12, // By having "sus" as an extension with a negative value, chords like C9sus will be properly parsed 
-	"sus2" : 2-12, //but still put the fourth of the chord lower as is typical for this kind of chord
-	"sus4" : 5-12,
+	"#1":   1,
+	"#15":  1,
+	"b9":   1,
+	"9":    2,
+	"#9":   3,
+	"ll":   5,
+	"#11":  6,
+	"b5":   6,
+	"#5":   8,
+	"b13":  8,
+	"13":   9,
+	"sus":  5 - 12, // By having "sus" as an extension with a negative value, chords like C9sus will be properly parsed
+	"sus2": 2 - 12, //but still put the fourth of the chord lower as is typical for this kind of chord
+	"sus4": 5 - 12,
 }
-
-
 
 var ChordFormulas = map[string][]Interval{
 	"maj":  {Root, MajorThird, PerfectFifth},
@@ -113,7 +113,6 @@ func (c *Chord) addTone(tone Interval) {
 	c.Tones = append(c.Tones, tone)
 }
 
-
 func (c *Chord) addTones(tones []Interval) {
 	c.Tones = append(c.Tones, tones...)
 }
@@ -133,8 +132,8 @@ func (c *Chord) removeTone(tone Interval) {
 }
 
 func ChalkRemove(s []int, i int) []int {
-    s[i] = s[len(s)-1]
-    return s[:len(s)-1]
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
 }
 
 func (c Chord) hasInterval(interval Interval) bool {
@@ -181,22 +180,22 @@ func (c *Chord) applyVoicingRules() {
 	}
 }
 
-func noteToNumber(note string) int{
-	notes := map[rune]int{
-		'C':12,
-		'D':14,
-		'E':16,
-		'F':17,
-		'G':19,
-		'A':21,
-		'B':23,
+func noteToNumber(note string) int {
+	notes := map[byte]int{
+		'C': 12,
+		'D': 14,
+		'E': 16,
+		'F': 17,
+		'G': 19,
+		'A': 21,
+		'B': 23,
 	}
 	accidentals := map[rune]int{
-		'b':-1,
-		'#':1,
+		'b': -1,
+		'#': 1,
 	}
 	value := notes[note[0]]
-	for index, item := range note[1:] {
+	for _, item := range note[1:] {
 		value += accidentals[item]
 	}
 	return value
@@ -364,13 +363,14 @@ func ChalkParseChord(inChord string) []float64 {
 	// into a list of integers corresponding to the MIDI notes for the chord.
 	//
 
-	spreadExtensions := true
+	spreadExtensions := false
 	lowRoot := true
 	// Above is a list of parameters for the chord voicing that change how voicings are done
 	extensionOctave := 48
 	if spreadExtensions {
 		extensionOctave = 60
 	}
+
 	chordTones := ChalkChordFormulas[chord.Quality]
 
 	if slices.Contains(chord.Extensions, "sus") || slices.Contains(chord.Extensions, "sus2") || slices.Contains(chord.Extensions, "sus4") {
@@ -380,9 +380,9 @@ func ChalkParseChord(inChord string) []float64 {
 			}
 		}
 	}
-	if slices.Contains(chord.Extensions, "b5") || slices.Contains(chord.Extensions, "#5"){
+	if slices.Contains(chord.Extensions, "b5") || slices.Contains(chord.Extensions, "#5") {
 		for index, tone := range chordTones {
-			if tone == 7{
+			if tone == 7 {
 				chordTones = ChalkRemove(chordTones, index)
 			}
 		}
@@ -406,12 +406,13 @@ func ChalkParseChord(inChord string) []float64 {
 	}
 	voicing = append(voicing, chord.Root+48)
 	if lowRoot {
-		voicing = append(voicing, chord.Root+36)
+		voicing = append(voicing, chord.BassNote+36)
+		voicing = append(voicing, chord.BassNote+24)
 	}
 
 	// The chord is now voiced in MIDI note numbers.
 	freqVoicing := []float64{}
-	fmt.Println(voicing)
+
 	for _, m := range voicing {
 		freqVoicing = append(freqVoicing, math.Pow(2, float64((float64(m)-69.0)/12.0))*440.0)
 	}
