@@ -136,8 +136,8 @@ var sequenceCmd = &cobra.Command{
 
 		sb := godio.NewSoundBuffer()
 		for _, chordStr := range chords {
-			chord := godio.ParseChord(chordStr)
-			sb.AppendChord(chord.GetFrequencies(), duration, godio.Waveform(waveform))
+			chord := godio.ChalkParseChord(chordStr)
+			sb.AppendChord(chord, duration, godio.Waveform(waveform))
 		}
 		sb.ApplyADSR(godio.ADSREnvelope{
 			Attack:  1,
