@@ -94,9 +94,9 @@ var chordCmd = &cobra.Command{
 			panic(err)
 		}
 
-		chord := godio.ParseChord(chordString)
+		chord := godio.ChalkParseChord(chordString)
 		sb := godio.NewSoundBuffer()
-		sb.AppendChord(chord.GetFrequencies(), duration, godio.Waveform(waveform))
+		sb.AppendChord(chord, duration, godio.Waveform(waveform))
 		sb.ApplyADSR(godio.ADSREnvelope{
 			Attack:  10,
 			Decay:   0,
