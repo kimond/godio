@@ -1,6 +1,7 @@
 package godio
 
 import (
+	"fmt"
 	"math"
 	"slices"
 	"strings"
@@ -26,6 +27,7 @@ var chordFormulas = map[string][]int{
 	"dim7":    {3, 6, 9},
 	"m":       {3, 7},
 	"m7":      {3, 7, 10},
+	"7":       {4, 7, 10},
 	"maj7":    {4, 7, 11},
 	"9":       {4, 7, 10, 2},
 	"m9":      {3, 7, 10, 2},
@@ -152,7 +154,8 @@ func (c Chord) GetFrequenciesV2() []float64 {
 	bassNote := noteToNumber(c.BassNote)
 
 	chordTones := chordFormulas[c.Quality]
-
+	fmt.Println(chordTones)
+	fmt.Println(c.Extensions)
 	if slices.Contains(c.Extensions, "sus") || slices.Contains(c.Extensions, "sus2") || slices.Contains(c.Extensions, "sus4") {
 		for index, tone := range chordTones {
 			if tone == 3 || tone == 4 {
@@ -314,6 +317,5 @@ func ParseChord(chordStr string) *Chord {
 	for _, extension := range chord.Extensions {
 		chord.Tones = append(chord.Tones, extensionFormulas[extension])
 	}
-
 	return chord
 }
