@@ -2,10 +2,12 @@ package godio
 
 import (
 	"fmt"
-	"github.com/go-audio/audio"
-	"github.com/go-audio/wav"
 	"io"
 	"math"
+	"math/rand"
+
+	"github.com/go-audio/audio"
+	"github.com/go-audio/wav"
 )
 
 const (
@@ -170,4 +172,74 @@ func (sb *SoundBuffer) combineBuffers() []int {
 	}
 
 	return combinedBuffer
+}
+
+type StrumParams struct {
+	Duration   int     // Duration of the strum in milliseconds
+	Randomness float64 // Randomness of the strum (0 to 1)
+}
+
+func (sb *SoundBuffer) AppendChordWithStrum(frequencies []float64, durationSec float64, waveform Waveform, strumParams StrumParams, env ADSREnvelope) {
+	numSamples := int(float64(sampleRate) * durationSec)
+	strumSamples := (strumParams.Duration * sampleRate) / 1000
+
+	attackSamples := (env.Attack * sampleRate) / 1000
+	decaySamples := (env.Decay * sampleRate) / 1000
+	releaseSamples := (env.Release * sampleRate) / 1000
+
+	finalBuffer := make([]int, numSamples)
+
+	for i, freq := range frequencies {
+		baseDelay := (strumSamples * i) / len(frequencies)
+		randomOffset := int(float64(strumSamples) * strumParams.Randomness * (rand.Float64() - 0.5))
+		delay := baseDelay + randomOffset
+		if delay < 0 {
+			delay = 0
+		}
+
+		noteBuffer := make([]float64, numSamples)
+		for j := delay; j < numSamples; j++ {
+			t := float64(j-delay) / float64(sampleRate)
+
+			// Generate base waveform
+			var sample float64
+			switch waveform {
+			case WaveformSine:
+				sample = math.Sin(2 * math.Pi * freq * t)
+			case WaveformSquare:
+				if int(math.Floor(t*freq))%2 == 0 {
+					sample = 1.0
+				} else {
+					sample = -1.0
+				}
+			case WaveformSawtooth:
+				sample = 2.0 * (t*freq - math.Floor(t*freq+0.5))
+			case WaveformTriangle:
+				sample = 2.0*math.Abs(2.0*(t*freq-math.Floor(t*freq+0.5))) - 1.0
+			}
+
+			// Apply ADSR envelope
+			timeFromStart := j - delay
+			var amplitude float64
+			switch {
+			case timeFromStart < attackSamples:
+				amplitude = float64(timeFromStart) / float64(attackSamples)
+			case timeFromStart < attackSamples+decaySamples:
+				amplitude = 1 - (1-env.Sustain)*float64(timeFromStart-attackSamples)/float64(decaySamples)
+			case timeFromStart < numSamples-releaseSamples:
+				amplitude = env.Sustain
+			default:
+				amplitude = env.Sustain * (1 - float64(timeFromStart-(numSamples-releaseSamples))/float64(releaseSamples))
+			}
+
+			noteBuffer[j] = sample * amplitude
+		}
+
+		// Mix into final buffer
+		for j := range finalBuffer {
+			finalBuffer[j] += int(volume * 32767 * noteBuffer[j] / float64(len(frequencies)))
+		}
+	}
+
+	sb.buffers = append(sb.buffers, finalBuffer)
 }

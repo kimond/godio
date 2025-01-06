@@ -1,9 +1,10 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/kimond/godio/pkg/godio"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -29,6 +30,7 @@ func init() {
 	addCommonFlags(noteCmd)
 	addCommonFlags(chordCmd)
 	addCommonFlags(sequenceCmd)
+	sequenceCmd.Flags().Bool("v2", false, "Use voicing v2")
 }
 
 func addCommonFlags(cmd *cobra.Command) {
@@ -132,12 +134,20 @@ var sequenceCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+		v2, err := cmd.Flags().GetBool("v2")
+		if err != nil {
+			panic(err)
+		}
 		chords := args
 
 		sb := godio.NewSoundBuffer()
 		for _, chordStr := range chords {
 			chord := godio.ParseChord(chordStr)
-			sb.AppendChord(chord.GetFrequencies(), duration, godio.Waveform(waveform))
+			if v2 {
+				sb.AppendChord(chord.GetFrequenciesV2(), duration, godio.Waveform(waveform))
+			} else {
+				sb.AppendChord(chord.GetFrequencies(), duration, godio.Waveform(waveform))
+			}
 		}
 		sb.ApplyADSR(godio.ADSREnvelope{
 			Attack:  1,

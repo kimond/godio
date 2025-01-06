@@ -137,9 +137,18 @@ func (n NoteFrequenciesMap) getNoteIndex(note string) int {
 }
 
 // GetNoteFromInterval returns the frequency of a note given a root note and an interval in semitones
-func (n NoteFrequenciesMap) GetNoteFromInterval(root string, interval Interval) float64 {
+func (n NoteFrequenciesMap) GetNoteFromInterval(root string, interval int) float64 {
 	rootIndex := n.getNoteIndex(root)
 	values := lo.Values(n)
 	sort.Float64s(values)
-	return values[rootIndex+int(interval)]
+	return values[rootIndex+interval]
+}
+
+func (n NoteFrequenciesMap) GetNoteNameFromFrequencies(frequency float64) string {
+	for note, freq := range n {
+		if freq == frequency {
+			return note
+		}
+	}
+	return ""
 }
