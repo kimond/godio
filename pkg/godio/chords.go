@@ -57,6 +57,7 @@ var extensionFormulas = map[string]int{
 	"sus":  5 - 12, // By having "sus" as an extension with a negative value, chords like C9sus will be properly parsed
 	"sus2": 2 - 12, // but still put the fourth of the chord lower as is typical for this kind of chord
 	"sus4": 5 - 12,
+	"maj7": 11
 }
 
 func (c *Chord) addTone(tone int) {
