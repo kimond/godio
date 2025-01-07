@@ -1,7 +1,6 @@
 package godio
 
 import (
-	"fmt"
 	"math"
 	"slices"
 	"strings"
@@ -154,8 +153,6 @@ func (c Chord) GetFrequenciesV2() []float64 {
 	bassNote := noteToNumber(c.BassNote)
 
 	chordTones := chordFormulas[c.Quality]
-	fmt.Println(chordTones)
-	fmt.Println(c.Extensions)
 	if slices.Contains(c.Extensions, "sus") || slices.Contains(c.Extensions, "sus2") || slices.Contains(c.Extensions, "sus4") {
 		for index, tone := range chordTones {
 			if tone == 3 || tone == 4 {
